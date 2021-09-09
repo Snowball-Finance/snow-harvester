@@ -46,6 +46,9 @@ function harvest() {
         .then(addDecisions)
         .then(doHarvesting)
         .then(doEarning)
+        .then(() => {
+          process.exit();
+        })
         .catch(handleError);
 }
 
