@@ -10,6 +10,7 @@ const Config = {
         ENABLED: true,
         INTERVAL: 1 * HOUR,
         INTERVAL_WINDOW: 30 * MINUTE,
+        CONTAINER_MODE: true
     },
     DISCORD: {
         ENABLED: true,

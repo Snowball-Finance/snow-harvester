@@ -28,7 +28,10 @@ let executionWindowCenter = Date.now();
 let executionDrift = 0;
 
 //if execution is enabled it makes a window, if not it just harvests in testmode
-const scheduledHarvest = CONFIG.EXECUTION.ENABLED ? scheduleNextHarvest : harvest;
+const scheduledHarvest = 
+    CONFIG.EXECUTION.ENABLED && CONFIG.EXECUTION.CONTAINER_MODE 
+    ? scheduleNextHarvest 
+    : harvest;
 
 if (CONFIG.DISCORD.ENABLED){
     DiscordBot.login(CONFIG.DISCORD.TOKEN).then(scheduledHarvest);
@@ -47,7 +50,11 @@ function harvest() {
         .then(doHarvesting)
         .then(doEarning)
         .then(() => {
-          process.exit();
+          if(CONFIG.EXECUTION.CONTAINER_MODE){
+            process.exit();
+          }else{
+            scheduleNextHarvest();
+          }
         })
         .catch(handleError);
 }
