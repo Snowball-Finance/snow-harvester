@@ -7,12 +7,12 @@ const Config = {
         KEY: process.env.SNOWBALL_KEY,
     },
     EXECUTION: {
-        ENABLED: false,
-        INTERVAL: 12 * HOUR,
+        ENABLED: true,
+        INTERVAL: 1 * HOUR,
         INTERVAL_WINDOW: 30 * MINUTE,
     },
     DISCORD: {
-        ENABLED: false,
+        ENABLED: true,
         TOKEN: process.env.DISCORD_KEY,
         CHANNEL: '818943563759878196', // #harvests
     },
