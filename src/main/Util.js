@@ -59,13 +59,7 @@ const Util = {
 
     cchainAddressLink(address) {
         return `https://cchain.explorer.avax.network/address/${address}`;
-    },
-
-    thumbnailLink(strategy) {
-        const linkRepo = 'https://raw.githubusercontent.com/Jonasslv/snow-harvester/facc6d6168fabd336ed66987e0bdedb68207fcab/assets/';
-        return `${linkRepo}${strategy}.png`
     }
-
 };
 
 module.exports = Util;

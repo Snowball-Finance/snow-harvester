@@ -3,7 +3,7 @@ const ABI = require('../../config/abi.json');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider('https://api.avax.network/ext/bc/C/rpc'));
 const Util = require('./Util');
-const DiscordBot = require('./DiscordBot');
+const axios = require("axios");
 const WANTS = require('../../config/Wants');
 const VALUATION = require('../../config/Valuation');
 const {
@@ -34,12 +34,7 @@ const scheduledHarvest =
     ? scheduleNextHarvest 
     : harvest;
 
-if (CONFIG.DISCORD.ENABLED){
-    DiscordBot.login(CONFIG.DISCORD.TOKEN).then(scheduledHarvest);
-}else{
-    scheduledHarvest();
-}
-
+scheduledHarvest();
 
 function harvest() {
     initHarvests()
@@ -372,10 +367,7 @@ async function doLeveraging(payload){
 async function sendDiscord(payload){
     //we need to await for our discord calls when running at container mode, and we can't let it await
     //between transactions because it opens margin for frontrunning
-
-    await discordHarvestUpdate({ results:payload.results.harvest, harvests:payload.harvests });
-    await discordEarnUpdate({ results:payload.results.earn, harvests:payload.harvests });
-    await discordLeverageUpdate({ results:payload.results.leverage, harvests:payload.harvests });
+    await discordUpdate({results: payload.results, harvests: payload.harvests})
 }
 
 function logHarvestingResults({ results, harvests }) {
@@ -441,73 +433,61 @@ function logLeverageResults({ results, harvests }) {
   return { results, harvests };
 }
 
-async function discordHarvestUpdate({ results, harvests }) {
+async function discordUpdate({ results, harvests }) {
     if (!CONFIG.EXECUTION.ENABLED) return console.log(`Discord notifications are disabled while in test mode`);
     if (!CONFIG.DISCORD.ENABLED) return console.log(`Did not notify discord. Set CONFIG.DISCORD.ENABLED to send notifications to #harvests`);
-
-    for (let i = 0; i< results.length; i++) {
-        const {reason, value} = results[i];
-        const harvest = harvests[i];
-        if (!harvest.harvestDecision) continue;
-        if (value) {
-            const embedObj = {
-                Color:'0x00aaff',
-                Title:`Strategy: ${harvest.name}`,
-                Thumbnail:Util.thumbnailLink(harvest.name),
-                URL:Util.cchainTransactionLink(value.transactionHash),
-            };
-            const message = `**Reinvested:**  ${harvest.harvestOverride ? 'Unknown' : Util.displayBNasFloat(harvest.harvestable, 18, 2)} **${harvest.harvestSymbol}**\n`+
-                            `**Value**:  $${harvest.harvestOverride ? '?.??' : Util.displayBNasFloat(harvest.gainUSD, 18, 2)}`;
-            embedObj.Description = message;
-            await DiscordBot.sendMessage(DiscordBot.makeEmbed(embedObj), CONFIG.DISCORD.CHANNEL);
-        }
+    
+    for (const [key] of Object.entries(results)) {
+        for (let i = 0; i < key.length; i++) {
+            const { value } = key[i];
+            const harvest = harvests[i];
+    
+            if (value) {
+                const embed = {
+                    "embeds": [
+                      {
+                        "title": null,
+                        "description": null,
+                        "url": Util.cchainTransactionLink(value.transactionHash),
+                        "color": 43775,
+                        "timestamp": new Date(Date.now()).toISOString()
+                      }
+                    ]
+                };
+        
+                if (harvest.harvestDecision) {
+                    embed.embeds.title = `Strategy: ${harvest.name}`;
+                    embed.embeds.description = `**Reinvested:**  ${harvest.harvestOverride ? 'Unknown' : Util.displayBNasFloat(harvest.harvestable, 18, 2)} **${harvest.harvestSymbol}**\n`+
+                    `**Value**:  $${harvest.harvestOverride ? '?.??' : Util.displayBNasFloat(harvest.gainUSD, 18, 2)}`;
+                } else if (harvest.earnDecision) {
+                    embed.embeds.title = `Snowglobe: ${harvest.name}`;
+                    embed.embeds.description = `**Swept:**  ${Util.displayBNasFloat(harvest.available, harvest.wantDecimals, 5)} **${harvest.wantSymbol}**\n`+
+                    `**Value**:  $${Util.displayBNasFloat(harvest.availableUSD, 18, 2)}`;         
+                } else if (harvest.leverageDecision) {
+                    embed.embeds.title = `Snowglobe: ${harvest.name}`;
+                    embed.embeds.description = `**Leveraged:**  ${Util.displayBNasFloat(harvest.available, harvest.wantDecimals, 5)} **${harvest.wantSymbol}**\n`+
+                    `**Value**:  $${Util.displayBNasFloat(harvest.availableUSD, 18, 2)}`;
+                }
+    
+                if (embed.embeds.title) {
+                    await axios.request({
+                        method: "POST",
+                        url: CONFIG.DISCORD.WEBHOOK,
+                        data: embed,
+                        headers: {
+                            'Content-Type': "application/json"
+                        }
+                    }).then(res => {
+                        if (res.status !== 204) {
+                            console.error(`Could not post to Discord ${res.status}: ${res.statusText}`)
+                        }
+                    }).catch(err => {
+                        console.error("Could not post to Discord: ", err)
+                    })
+                }
+            }
+        }   
     }
-}
-
-async function discordEarnUpdate({ results, harvests }) {
-    if (!CONFIG.EXECUTION.ENABLED) return console.log(`Discord notifications are disabled while in test mode`);
-    if (!CONFIG.DISCORD.ENABLED) return console.log(`Did not notify discord. Set CONFIG.DISCORD.ENABLED to send notifications to #harvests`);
-
-    for (let i = 0; i< results.length; i++) {
-        const {reason, value} = results[i];
-        const harvest = harvests[i];
-        if (!harvest.earnDecision) continue;
-        if (value) {
-            const embedObj = {
-                Color:'0x00aaff',
-                Title:`Snowglobe: ${harvest.name}`,
-                Thumbnail:Util.thumbnailLink(harvest.name),
-                URL:Util.cchainTransactionLink(value.transactionHash),
-            };
-            const message = `**Swept:**  ${Util.displayBNasFloat(harvest.available, harvest.wantDecimals, 5)} **${harvest.wantSymbol}**\n`+
-                            `**Value**:  $${Util.displayBNasFloat(harvest.availableUSD, 18, 2)}`;
-            embedObj.Description = message;
-            await DiscordBot.sendMessage(DiscordBot.makeEmbed(embedObj), CONFIG.DISCORD.CHANNEL);
-        }
-    }
-}
-
-async function discordLeverageUpdate({ results, harvests }) {
-  if (!CONFIG.EXECUTION.ENABLED) return console.log(`Discord notifications are disabled while in test mode`);
-  if (!CONFIG.DISCORD.ENABLED) return console.log(`Did not notify discord. Set CONFIG.DISCORD.ENABLED to send notifications to #harvests`);
-
-  for (let i = 0; i< results.length; i++) {
-      const {reason, value} = results[i];
-      const harvest = harvests[i];
-      if (!harvest.leverageDecision) continue;
-      if (value) {
-          const embedObj = {
-              Color:'0x00aaff',
-              Title:`Snowglobe: ${harvest.name}`,
-              Thumbnail:Util.thumbnailLink(harvest.name),
-              URL:Util.cchainTransactionLink(value.transactionHash),
-          };
-          const message = `**Leveraged:**  ${Util.displayBNasFloat(harvest.available, harvest.wantDecimals, 5)} **${harvest.wantSymbol}**\n`+
-                          `**Value**:  $${Util.displayBNasFloat(harvest.availableUSD, 18, 2)}`;
-          embedObj.Description = message;
-          await DiscordBot.sendMessage(DiscordBot.makeEmbed(embedObj), CONFIG.DISCORD.CHANNEL);
-      }
-  }
 }
 
 function handleError(err) {

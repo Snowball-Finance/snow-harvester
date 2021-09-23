@@ -6,7 +6,6 @@ WORKDIR '/app'
 # Initially copy only the dependencies json file
 COPY package.json .
 COPY config/ /config/
-COPY assets/ /assets/
 # install dependencies 
 RUN npm install
 
