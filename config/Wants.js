@@ -1,6 +1,42 @@
+const OPTIMIZER_CONTROLLER = "0x2F0b4e7aC032d0708C082994Fb21Dd75DB514744";
+
+const OPTIMIZER_POOLS = [
+  //avax
+  {
+    LP: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+    contracts: [
+      //benqi
+      {
+        strategy: "0xdc2159A913A99d22b771Bd614C77C45738461188",
+        fixedSnowglobe: "0xaCF2814cF22fCB08b3dDA331221A52ad7B05639B" //snowglobe from non-optimized strategy
+      },
+      //aave
+      {
+        strategy: "0x0f776b5b97BfA366f929FE82bd50C312C39f26f1",
+        fixedSnowglobe: "0x951f6c751A9bC5A75a4E4d43be205aADa709D3B8" //snowglobe from non-optimized strategy
+      }
+    ]
+  },
+  {
+    LP: "0xd586E7F844cEa2F87f50152665BCbc2C279D8d70",
+    contracts: [
+      //benqi
+      {
+        strategy: "0x5618041c863228DC6298bc5fD17EADa6Fe9Df618",
+        fixedSnowglobe: "0x7b2525A502800E496D2e656e5b1188723e547012" //snowglobe from non-optimized strategy
+      },
+      //aave
+      {
+        strategy: "0x13d753C651526Bf3501818813B829B339ae867AF",
+        fixedSnowglobe: "0xE4543C234D4b0aD6d29317cFE5fEeCAF398f5649" //snowglobe from non-optimized strategy
+      }
+    ]
+  }
+]
+
 const Wants = {
   GAUGE_PROXY_ADDRESS: "0x215D5eDEb6A6a3f84AE9d72962FEaCCdF815BF27",
-  
+
   OVERRIDE_OMIT: [
     '0xA42BE3dB9aff3aee48167b240bFEE5e1697e1281', // S3F
     '0xdE1A11C331a0E45B9BA8FeE04D4B51A745f1e4A4', // S3D
@@ -16,6 +52,7 @@ const Wants = {
   ],
 
   CONTROLLERS: [
+    OPTIMIZER_CONTROLLER,
     '0x14559fb4d15Cf8DCbc35b7EDd1215d56c0468202', // Platypus controller
     '0xCEB829a0881350689dAe8CBD77D0E012cf7a6a3f', // New trader joe controller
     '0x252B5fD3B1Cb07A2109bF36D5bDE6a247c6f4B59', // BENQI second Controller
@@ -27,7 +64,7 @@ const Wants = {
     '0xc7D536a04ECC43269B6B95aC1ce0a06E0000D095', // AXIAL Controller
     '0xFb7102506B4815a24e3cE3eAA6B834BE7a5f2807', // Banker Joe Controller
   ],
-  
-};  
 
-module.exports = Wants;
+};
+
+module.exports = { WANTS: Wants, OPTIMIZER_CONTROLLER, OPTIMIZER_POOLS};

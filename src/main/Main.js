@@ -1,8 +1,8 @@
+const { doOptimize } = require('./Optimizer');
 const CONFIG = require('../../config/Config');
 const ABI = require('../../config/abi.json');
 const Util = require('./Util');
-const WANTS = require('../../config/Wants');
-const axios = require('axios');
+const { WANTS } = require('../../config/Wants');
 const VALUATION = require('../../config/Valuation');
 const {
     ZERO_ADDRESS,
@@ -83,6 +83,7 @@ function harvest() {
         .then(doSync)
         .then(doDeleveraging)
         .then(sendDiscord)
+        .then(() => {doOptimize(signer)})
         .then(() => {
             if (CONFIG.EXECUTION.CONTAINER_MODE) {
                 process.exit();
@@ -558,7 +559,7 @@ async function addDeleverageTx(harvests) {
                 const unleveragedSupply = await strategyUnsigned.callStatic["getSuppliedUnleveraged()"]({ from: CONFIG.WALLET.ADDRESS, gasLimit: 7_000_000 });
                 const idealSupply = await strategyUnsigned.callStatic["getLeveragedSupplyTarget(uint256)"](unleveragedSupply, { from: CONFIG.WALLET.ADDRESS, gasLimit: 7_000_000 });
 
-                const poolState = await getPoolAPIInfo(harvest.snowglobe.address);
+                const poolState = await Util.getPoolAPIInfo(harvest.snowglobe.address);
                 const deposited = await strategyUnsigned.balanceOfPool();
                 const supplied = await strategyUnsigned.getSuppliedView();
                 const currLev = supplied / deposited;
@@ -897,24 +898,10 @@ async function discordUpdate({ results, harvests }) {
             }
 
             if (embed.embeds[0].title) {
-                await axios({
-                    url: CONFIG.DISCORD.WEBHOOK_URL,
-                    method: 'post',
-                    data: JSON.stringify(embed),
-                    headers: {
-                        'Content-Type': "application/json"
-                    }
-                }).then(res => {
-                    if (res.status !== 204) {
-                        console.error(`Could not post to Discord ${res.status}: ${res.statusText}`)
-                    }
-                }).catch(err => {
-                    console.error("Could not post to Discord: ", err)
-                })
+               await Util.sendDiscord(CONFIG.DISCORD.WEBHOOK_URL, embed);
             }
         }
     }
-
 }
 
 function handleError(err) {
@@ -1086,35 +1073,6 @@ async function estimatePriceOfAsset(assetAddress, assetDecimals, isAxial = false
         price = price.mul(priceWAVAX).div('1' + '0'.repeat(18));
     }
     return price;
-}
-
-async function getPoolAPIInfo(snowglobeAddress) {
-    const data = JSON.stringify({
-        query:
-            `{
-            PoolsInfoByAddress(address: "${snowglobeAddress}"){
-                dailyAPR
-                deprecated
-            }
-        }`,
-        variables: {}
-    });
-
-    const config = {
-        method: 'post',
-        url: 'https://api.snowapi.net/graphql',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        data: data
-    };
-
-    try {
-        const query = await axios(config);
-        return query.data.data.PoolsInfoByAddress;
-    } catch (error) {
-        console.error(error);
-    }
 }
 
 const roundDown = (value, decimals = 18) => {
