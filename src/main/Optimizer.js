@@ -64,11 +64,23 @@ async function doOptimize(signer) {
                     `**Old APY**: ${currentPoolInfo.yearlyAPY.toFixed(2)}% - **New APY**: ${bestAPY.toFixed(2)}%`
 
             //prepare batch
-            const IController = new ethers.utils.Interface(ABI.CONTROLLER);
-            const encodedData = IController.encodeFunctionData("setStrategy", [pool.LP, infoList[bestIndex].strategy]);
+            const IStrategy = new ethers.utils.Interface(ABI.STRATEGY);
+            const encodedLeverage = IStrategy.encodeFunctionData("leverageToMax", []);
+            const encodedDeleverage = IStrategy.encodeFunctionData("deleverageToMin", []);
 
-            timelockData.push(encodedData);
+            const IController = new ethers.utils.Interface(ABI.CONTROLLER);
+            const encodedSetStrategy = IController.encodeFunctionData("setStrategy", [pool.LP, infoList[bestIndex].strategy]);
+
+            timelockData.push(encodedDeleverage);
+            timelockTargets.push(currentStrategy);
+            timelockValues.push(0);
+            
+            timelockData.push(encodedSetStrategy);
             timelockTargets.push(OPTIMIZER_CONTROLLER);
+            timelockValues.push(0);
+
+            timelockData.push(encodedLeverage);
+            timelockTargets.push(infoList[bestIndex].strategy);
             timelockValues.push(0);
         }
     }
