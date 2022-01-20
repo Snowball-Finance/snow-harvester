@@ -8,18 +8,18 @@ locals {
         "com.datadoghq.ad.instances" : "[{\"host\":\"%%host%%\"}]",
         "com.datadoghq.ad.check_names" : "[\"harvester\"]"
       },
-      environment = [
+      secrets = [
         {
-          name  = "SNOWBALL_KEY"
-          value = data.aws_ssm_parameter.snowball_key.value
+          "name"      = "SNOWBALL_KEY"
+          "valueFrom" = "${data.aws_ssm_parameter.snowball_key.value}"
         },
          {
-          name  = "DISCORD_KEY"
-          value = data.aws_ssm_parameter.discord_key.value
+          "name"      = "DISCORD_KEY"
+          "valueFrom" = "${data.aws_ssm_parameter.discord_key.value}"
         },
         {
-          name: "WEBHOOK_URL",
-          value = data.aws_ssm_parameter.webhook.value
+          "name"      = "WEBHOOK_URL",
+          "valueFrom" = "${data.aws_ssm_parameter.webhook.value}"
         }
       ],
       logConfiguration = {
@@ -42,16 +42,14 @@ locals {
       name      = "datadog-agent"
       image     = "datadog/agent:latest"
       essential = true
-      environment = [
-        {
-          name  = "DD_API_KEY",
-          value = data.aws_ssm_parameter.dd_dog.value
-        },
-        {
+      secrets   = [{
+          "name"      = "DD_API_KEY",
+          "valueFrom" = "${data.aws_ssm_parameter.dd_dog.value}"
+      }],
+      environment = [{
           name  = "ECS_FARGATE"
           value = "true"
-        }
-      ]
+      }]
     },
     {
       name      = "log_router"
