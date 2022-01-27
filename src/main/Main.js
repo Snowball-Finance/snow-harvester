@@ -2,7 +2,7 @@ const { doOptimize } = require('./Optimizer');
 const CONFIG = require('../../config/Config');
 const ABI = require('../../config/abi.json');
 const Util = require('./Util');
-const { WANTS } = require('../../config/Wants');
+const { WANTS, OPTIMIZER_POOLS } = require('../../config/Wants');
 const VALUATION = require('../../config/Valuation');
 const {
     ZERO_ADDRESS,
@@ -530,7 +530,7 @@ async function addLeverageTx(harvests) {
                     leverageGas: ethers.BigNumber.from(leverageGas), //await leverageTx.estimateGas({from: CONFIG.WALLET.ADDRESS}),
                 }
             } catch (error) {
-                console.log(harvest.name);
+                console.log(harvest.name, "Leverage");
                 console.log(error.message);
                 //cant be leveraged
                 return { ...harvest };
@@ -559,7 +559,20 @@ async function addDeleverageTx(harvests) {
                 const unleveragedSupply = await strategyUnsigned.callStatic["getSuppliedUnleveraged()"]({ from: CONFIG.WALLET.ADDRESS, gasLimit: 7_000_000 });
                 const idealSupply = await strategyUnsigned.callStatic["getLeveragedSupplyTarget(uint256)"](unleveragedSupply, { from: CONFIG.WALLET.ADDRESS, gasLimit: 7_000_000 });
 
-                const poolState = await Util.getPoolAPIInfo(harvest.snowglobe.address);
+                const optimizedIndex = OPTIMIZER_POOLS.findIndex(
+                    o => o.snowglobe.toLowerCase() === harvest.snowglobe.address.toLowerCase()
+                );
+
+                let optimizedPool;
+                if(optimizedIndex > -1){
+                    optimizedPool = OPTIMIZER_POOLS[optimizedIndex].contracts.find(
+                        o => o.strategy.toLowerCase() === harvest.strategy.address.toLowerCase()
+                    )
+                }
+
+                const snowglobeAddr = optimizedPool ? optimizedPool.fixedSnowglobe : harvest.snowglobe.address
+                
+                const poolState = await Util.getPoolAPIInfo(snowglobeAddr);
                 const deposited = await strategyUnsigned.balanceOfPool();
                 const supplied = await strategyUnsigned.getSuppliedView();
                 const currLev = supplied / deposited;
@@ -586,7 +599,7 @@ async function addDeleverageTx(harvests) {
                     poolState
                 }
             } catch (error) {
-                console.log(harvest.name);
+                console.log(harvest.name, "Deleverage");
                 console.log(error.message);
                 //cant be synced or deleveraged
                 return { ...harvest };
@@ -633,7 +646,7 @@ function addDecisions(harvests) {
             //if it's not safe we want to drop some of leveraging
             if (harvest.poolState) {
                 const shouldLeverage = (harvest.poolState.dailyAPR > MIN_APR_TO_LEVERAGE && !harvest.poolState.deprecated);
-                console.log(harvest.currLev, harvest.notSafe)
+                console.log(harvest.currLev, harvest.notSafe, harvest.poolState.dailyAPR, MIN_APR_TO_LEVERAGE)
                 if (harvest.currLev > 1.2 && !shouldLeverage) {
                     //we shouldn't be leveraging this pool!
                     deleverageDecision = true;

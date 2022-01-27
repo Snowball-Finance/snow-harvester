@@ -3,6 +3,7 @@ const OPTIMIZER_CONTROLLER = "0x2F0b4e7aC032d0708C082994Fb21Dd75DB514744";
 const OPTIMIZER_POOLS = [
   //avax
   {
+    snowglobe: "0x3a3a0570f66cD5DfacB3c72b5214fec88e5722a8",
     LP: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
     contracts: [
       //benqi
@@ -18,6 +19,7 @@ const OPTIMIZER_POOLS = [
     ]
   },
   {
+    snowglobe: "0x8665e1FAD19D14b16Eecb96A7608cD42962E7eEB",
     LP: "0xd586E7F844cEa2F87f50152665BCbc2C279D8d70",
     contracts: [
       //benqi
