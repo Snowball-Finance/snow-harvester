@@ -11,23 +11,25 @@ locals {
       secrets = [
         {
           "name"      = "SNOWBALL_KEY"
-          "valueFrom" = "${data.aws_ssm_parameter.snowball_key.value}"
+          "valueFrom" = "${data.aws_ssm_parameter.snowball_key.arn}"
         },
          {
           "name"      = "DISCORD_KEY"
-          "valueFrom" = "${data.aws_ssm_parameter.discord_key.value}"
+          "valueFrom" = "${data.aws_ssm_parameter.discord_key.arn}"
         },
         {
           "name"      = "WEBHOOK_URL",
-          "valueFrom" = "${data.aws_ssm_parameter.webhook.value}"
+          "valueFrom" = "${data.aws_ssm_parameter.webhook.arn}"
         }
       ],
       logConfiguration = {
         logDriver = "awsfirelens"
-
+        secretOptions = [{
+          "name" = "apiKey",
+          "valueFrom" = "${data.aws_ssm_parameter.dd_dog.arn}"
+        }]
         options = {
           Name             = "datadog"
-          apikey           = data.aws_ssm_parameter.dd_dog.value
           "dd_service"     = "${local.env}-${local.task_name}"
           "Host"           = "http-intake.logs.datadoghq.com"
           "dd_source"      = "${local.env}-${local.task_name}"
@@ -44,7 +46,7 @@ locals {
       essential = true
       secrets   = [{
           "name"      = "DD_API_KEY",
-          "valueFrom" = "${data.aws_ssm_parameter.dd_dog.value}"
+          "valueFrom" = "${data.aws_ssm_parameter.dd_dog.arn}"
       }],
       environment = [{
           name  = "ECS_FARGATE"

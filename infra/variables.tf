@@ -4,6 +4,10 @@ locals {
   task_name    = "harvester"
 }
 
+data "aws_kms_key" "kms_key" {
+  key_id = "alias/${local.env}-kms-key"
+}
+
 data "aws_ssm_parameter" "snowball_key" {
   name  = "${local.env}-snowball-key"
 }

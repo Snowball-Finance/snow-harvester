@@ -73,7 +73,31 @@ data "aws_iam_policy_document" "task_assume_role_policy" {
       identifiers = ["ecs.amazonaws.com","ecs-tasks.amazonaws.com"]
     }
   }
+}
 
+data "aws_iam_policy_document" "task_ssm_access" {
+  statement {
+    actions = [ "kms:Decrypt" ]
+    resources = [ "${data.aws_kms_key.kms_key.arn}" ] 
+  }
+  statement {
+    actions = [ "ssm:GetParameters" ]
+    resources = [
+      "${data.aws_ssm_parameter.dd_dog.arn}",
+      "${data.aws_ssm_parameter.snowball_key.arn}",
+      "${data.aws_ssm_parameter.discord_key.arn}"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "ssm_access" {
+  name = "${local.env}-${local.cluster_name}-ssm-access-policy"
+  policy = data.aws_iam_policy_document.task_ssm_access.json
+}
+
+resource "aws_iam_role_policy_attachment" "task_ssm_access" {
+  role       = aws_iam_role.task_role.name
+  policy_arn = aws_iam_policy.ssm_access.arn
 }
 
 data "aws_iam_policy_document" "sns_topic_policy" {
