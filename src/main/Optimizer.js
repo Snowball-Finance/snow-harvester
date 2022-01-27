@@ -118,6 +118,7 @@ async function doOptimize(signer) {
         const executeData = outer_encoding;
 
         discordDescription += `\n\n**Run to Execute**:\n ${executeData}`;
+        console.log(executeData);
 
         const embed = {
             "embeds": [
