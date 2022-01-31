@@ -90,6 +90,17 @@ data "aws_iam_policy_document" "task_ssm_access" {
   }
 }
 
+resource "aws_iam_policy" "task_ssm_access" {
+  name = "${local.env}-${local.cluster_name}-ssm-access-policy"
+  policy = data.aws_iam_policy_document.task_ssm_access.json
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ssm_access" {
+  role = aws_iam_role.task_role.name
+  policy_arn = aws_iam_policy.task_ssm_access.arn
+}
+
+
 resource "aws_iam_policy" "ssm_access" {
   name = "${local.env}-${local.cluster_name}-ssm-access-policy"
   policy = data.aws_iam_policy_document.task_ssm_access.json
