@@ -1047,12 +1047,28 @@ async function getPoolShareAsUSD(poolContract) {
                 const token0Contract = new ethers.Contract(token0Address, ABI.ERC20, signer);
                 const token0Decimals = await token0Contract.decimals();
                 const priceToken0 = await estimatePriceOfAsset(token0Address, token0Decimals);
-                return reserves._reserve0.mul(2).mul(priceToken0).div(totalSupply);
+                const correction = ethers.BigNumber.from(18 - token0Decimals);
+                let priceLP;
+                if (correction > 0) {
+                    priceLP = reserves._reserve0.mul(ethers.BigNumber.from(10).pow(correction)).mul(2).mul(priceToken0).div(totalSupply);
+                } else {
+                    priceLP = reserves._reserve0.mul(2).mul(priceToken0).div(totalSupply);
+                }
+            
+                return priceLP
             } catch (error) {
                 const token1Contract = new ethers.Contract(token1Address, ABI.ERC20, signer);
                 const token1Decimals = await token1Contract.decimals();
                 const priceToken1 = await estimatePriceOfAsset(token1Address, token1Decimals);
-                return reserves._reserve1.mul(2).mul(priceToken1).div(totalSupply);
+                const correction = ethers.BigNumber.from(18 - token1Decimals);
+                let priceLP;
+                if (correction > 0) {
+                    priceLP = reserves._reserve1.mul(ethers.BigNumber.from(10).pow(correction)).mul(2).mul(priceToken1).div(totalSupply);
+                } else {
+                    priceLP = reserves._reserve1.mul(2).mul(priceToken1).div(totalSupply);
+                }
+            
+                return priceLP
             }
         }
     } catch (error) {

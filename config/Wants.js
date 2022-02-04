@@ -24,7 +24,7 @@ const OPTIMIZER_POOLS = [
     contracts: [
       //benqi
       {
-        strategy: "0x5618041c863228DC6298bc5fD17EADa6Fe9Df618",
+        strategy: "0x48f736cC619cAd053F559cF24edfa2401BeD9c76",
         fixedSnowglobe: "0x7b2525A502800E496D2e656e5b1188723e547012" //snowglobe from non-optimized strategy
       },
       //aave
