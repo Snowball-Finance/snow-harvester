@@ -570,7 +570,7 @@ async function addDeleverageTx(harvests) {
                     )
                 }
 
-                const snowglobeAddr = optimizedPool ? optimizedPool.fixedSnowglobe : harvest.snowglobe.address
+                const snowglobeAddr = optimizedPool ? optimizedPool.fixedSnowglobe : harvest.snowglobe.address;
                 
                 const poolState = await Util.getPoolAPIInfo(snowglobeAddr);
                 const deposited = await strategyUnsigned.balanceOfPool();
