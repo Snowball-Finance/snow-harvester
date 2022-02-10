@@ -15,6 +15,11 @@ const OPTIMIZER_POOLS = [
       {
         strategy: "0x0f776b5b97BfA366f929FE82bd50C312C39f26f1",
         fixedSnowglobe: "0x951f6c751A9bC5A75a4E4d43be205aADa709D3B8" //snowglobe from non-optimized strategy
+      },
+      //banker
+      {
+        strategy: "0x5bd7bB54e3B6798Ca33AcbD1F26541053721e69f",
+        fixedSnowglobe: "0x5d587f520590bb80153356271d33828bf499e9A2" //snowglobe from non-optimized strategy
       }
     ]
   },
@@ -42,6 +47,11 @@ const OPTIMIZER_POOLS = [
       {
         strategy: "0xEbbDEC4bFDd23eCC53225214Faf4612c19Dd0347",
         fixedSnowglobe: "0x32d9D114A2F5aC4ce777463e661BFA28C8fE9Eb7" //snowglobe from non-optimized strategy
+      },
+      //banker
+      {
+        strategy: "0x702490d609BcaAf697f345D502b15F7c60F35856",
+        fixedSnowglobe: "0x6C6B562100663b4179C95E5B199576f2E16b150e" //snowglobe from non-optimized strategy
       }
     ]
   },
@@ -58,6 +68,11 @@ const OPTIMIZER_POOLS = [
       {
         strategy: "0xBe290f7E69d5eC6941F9A3d6F1ebF93C179AD6DE",
         fixedSnowglobe: "0x72b7AddaeFE3e4b6452CFAEcf7C0d11e5EBD05a0" //snowglobe from non-optimized strategy
+      },
+      //banker
+      {
+        strategy: "0xfd2400B36a20a07c4ca79DfbEf4045Ea249B2a45",
+        fixedSnowglobe: "0x49e6A1255DEfE0B194a67199e78aD5AA5D7cb092" //snowglobe from non-optimized strategy
       }
     ]
   },
@@ -74,6 +89,11 @@ const OPTIMIZER_POOLS = [
       {
         strategy: "0xC623a46Ebd2398db4188070Efde2f355F5832399",
         fixedSnowglobe: "0xcB707aA965aEB9cB03d21dFADf496e6581Cd7b96" //snowglobe from non-optimized strategy
+      },
+      //banker
+      {
+        strategy: "0x9DcB28e8c2dB31b44Ce0448d567f48E8a310E808",
+        fixedSnowglobe: "0xfb49ea67b84F7c1bBD825de7febd2C836BC4B47E" //snowglobe from non-optimized strategy
       }
     ]
   },
@@ -90,6 +110,32 @@ const OPTIMIZER_POOLS = [
       {
         strategy: "0x707090bbCfd3b4470C724aF560FE3d7D7d0590E2",
         fixedSnowglobe: "0x0c33d6076F0Dce93db6e6103E98Ad951A0F33917" //snowglobe from non-optimized strategy
+      },
+      //banker
+      {
+        strategy: "0x80e47C48e9375c6431bE3FCB7DCd30dcc2bb5A3b",
+        fixedSnowglobe: "0x8C9fAEBD41c68B801d628902EDad43D88e4dD0a6" //snowglobe from non-optimized strategy
+      }
+    ]
+  },
+  { //usdt
+    snowglobe: "0x4C7887F2C555ba214582D7935ed60D004816BB0C",
+    LP: "0xc7198437980c041c805A1EDcbA50c1Ce5db95118",
+    contracts: [
+      //benqi
+      {
+        strategy: "0xcCb342985a2963Cd3643cfb40b63D145Ec8C5A40",
+        fixedSnowglobe: "0xE9d842C46e3bE5Ab68b226d9329515a85DF7cEE2" //snowglobe from non-optimized strategy
+      },
+      //aave
+      {
+        strategy: "0x5e8B060639646117539Fd33Ee221364012332C9B",
+        fixedSnowglobe: "0x567350328dB688d49284e79F7DBfad2AAd094B7A" //snowglobe from non-optimized strategy
+      },
+      //banker joe
+      {
+        strategy: "0x1A07f2AEec34E3CaDaf85EeEE45fcC70881178DF",
+        fixedSnowglobe: "0xc7Ca863275b2D0F7a07cA6e2550504362705aA1A" //snowglobe from non-optimized strategy
       }
     ]
   }
