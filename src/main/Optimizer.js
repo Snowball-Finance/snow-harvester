@@ -37,7 +37,7 @@ async function doOptimize(signer) {
                     APY: poolInfo.yearlyAPY,
                     TVL: poolInfo.tvlStaked,
                     strategy: contract.strategy,
-                    snowglobe: contract.snowglobe,
+                    snowglobe: pool.snowglobe,
                 }
             )
         }
@@ -47,7 +47,7 @@ async function doOptimize(signer) {
         let bestIndex = -1;
         let poolName = "", source = "";
         for (let i = 0; i < infoList.length; i++) {
-            if(Number(infoList[i].APY) + 0.3 > bestAPY){
+            if(Number(infoList[i].APY) + 0.05 > bestAPY){
                 //found best APY for pool
                 bestIndex = i;
                 bestAPY = Number(infoList[i].APY);
@@ -65,13 +65,16 @@ async function doOptimize(signer) {
 
             //prepare batch
             const IStrategy = new ethers.utils.Interface(ABI.STRATEGY);
+            const ISnowglobe = new ethers.utils.Interface(ABI.SNOWGLOBE);
+
+            const encodedHarvest = IStrategy.encodeFunctionData("harvest", []);
             const encodedLeverage = IStrategy.encodeFunctionData("leverageToMax", []);
-            const encodedDeleverage = IStrategy.encodeFunctionData("deleverageToMin", []);
+            const encodedEarn = ISnowglobe.encodeFunctionData("earn", []);
 
             const IController = new ethers.utils.Interface(ABI.CONTROLLER);
             const encodedSetStrategy = IController.encodeFunctionData("setStrategy", [pool.LP, infoList[bestIndex].strategy]);
 
-            timelockData.push(encodedDeleverage);
+            timelockData.push(encodedHarvest);
             timelockTargets.push(currentStrategy);
             timelockValues.push(0);
             
@@ -79,10 +82,17 @@ async function doOptimize(signer) {
             timelockTargets.push(OPTIMIZER_CONTROLLER);
             timelockValues.push(0);
 
-            timelockData.push(encodedLeverage);
-            timelockTargets.push(infoList[bestIndex].strategy);
+            timelockData.push(encodedEarn);
+            timelockTargets.push(infoList[bestIndex].snowglobe);
             timelockValues.push(0);
+
+            if(bestAPY > 4){
+                timelockData.push(encodedLeverage);
+                timelockTargets.push(infoList[bestIndex].strategy);
+                timelockValues.push(0);
+            }
         }
+        console.log(timelockTargets,timelockValues,timelockData);
     }
 
     if(timelockData.length > 0){
@@ -94,8 +104,8 @@ async function doOptimize(signer) {
         const predecessor = "0x0000000000000000000000000000000000000000000000000000000000000000";
         const delay = 60;
 
-        const salt = ethers.BigNumber.from("0x17d0125345ab514ed45c14f379ae363a8a1ace81d34ba2749c23ac259db51e2e")
-            .add(Math.floor(1000000*Math.random()));
+        let salt = ethers.BigNumber.from("0x17d0125345ab514ed45c14f379ae363a8a1ace81d34ba2749c23ac259db51e2e");
+        salt = salt.add(Math.floor(1000000*Math.random()));
 
         let txHash = "";
         if(CONFIG.EXECUTION.ENABLED) {
@@ -118,7 +128,6 @@ async function doOptimize(signer) {
         const executeData = outer_encoding;
 
         discordDescription += `\n\n**Run to Execute**:\n ${executeData}`;
-        console.log(executeData);
 
         const embed = {
             "embeds": [
@@ -131,6 +140,8 @@ async function doOptimize(signer) {
                 }
             ]
         };
+
+        console.log(embed);
 
         if(CONFIG.DISCORD.ENABLED){
             await Utils.sendDiscord(CONFIG.DISCORD.WEBHOOK_OPTIMIZER,embed);

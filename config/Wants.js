@@ -8,7 +8,7 @@ const OPTIMIZER_POOLS = [
     contracts: [
       //benqi
       {
-        strategy: "0x48f736cC619cAd053F559cF24edfa2401BeD9c76",
+        strategy: "0x51B29aA47588A0dCAE748297C7A9ddE10035522E",
         fixedSnowglobe: "0xaCF2814cF22fCB08b3dDA331221A52ad7B05639B" //snowglobe from non-optimized strategy
       },
       //aave
@@ -29,7 +29,7 @@ const OPTIMIZER_POOLS = [
     contracts: [
       //benqi
       {
-        strategy: "0x5618041c863228DC6298bc5fD17EADa6Fe9Df618",
+        strategy: "0x1Ab9ab0260736Cebbf1FdA8E0e31650Cf14B93DA",
         fixedSnowglobe: "0x7b2525A502800E496D2e656e5b1188723e547012" //snowglobe from non-optimized strategy
       },
       //aave

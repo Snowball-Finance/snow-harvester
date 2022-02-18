@@ -83,7 +83,7 @@ function harvest() {
         .then(doSync)
         .then(doDeleveraging)
         .then(sendDiscord)
-        .then(() => {doOptimize(signer)})
+        .then(async () => { await doOptimize(signer)  })
         .then(() => {
             if (CONFIG.EXECUTION.CONTAINER_MODE) {
                 process.exit();
