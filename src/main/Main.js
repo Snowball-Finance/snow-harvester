@@ -22,7 +22,8 @@ const {
     AXIAL_MASTERCHEF,
     QI_ADDRESS,
     RETRY_TXS,
-    PTP_ADDRESS
+    PTP_ADDRESS,
+    MIN_TVL_TO_HARVEST_FOLDING
 } = require('../../config/Constants');
 const { ethers } = require('ethers');
 
@@ -68,9 +69,9 @@ const scheduledHarvest =
 
 scheduledHarvest();
 
-function harvest() {
-    initHarvests()
-        .then(addRequirements)
+async function harvest() {
+    const harvests = await initHarvests();
+    await addRequirements(harvests)
         .then(addCalculations)
         .then(addEarnTx)
         .then(addHarvestTx)
@@ -108,14 +109,19 @@ async function getSnowglobes() {
     ];
 }
 
-async function initHarvests() {
+async function initHarvests(retrys = 0) {
     provider = await selectBestProvider();
     signer = new ethers.Wallet(CONFIG.WALLET.KEY, provider);
 
     const gasPrice = await provider.getGasPrice();
     //we shouldnt harvest if the gas price is too high
     if (gasPrice > MAX_GAS_PRICE) {
-        throw new Error("Gas price too High");
+        if(retrys > 11 ){ //try 2 hours
+            throw new Error("Tried too many times, aborting.");
+        }
+        console.log("Gas too high, awaiting 10min before trying again.");
+        await Util.wait(600000); //wait 10 minutes
+        return initHarvests(retrys += 1);
     }
 
     const snowglobes = await getSnowglobes();
@@ -191,7 +197,7 @@ async function initHarvests() {
         } catch (error) {
             console.log(error.message);
         }
-    }
+    };
     return results;
 }
 
@@ -632,7 +638,9 @@ function addDecisions(harvests) {
 
         let harvestDecision = cost.lt(gain)
             || harvest.harvestOverride
-            || (isFolding && harvest.poolState && !harvest.poolState.deprecated)
+            || (isFolding && harvest.poolState 
+                && !harvest.poolState.deprecated 
+                && harvest.poolState.tvlStaked > MIN_TVL_TO_HARVEST_FOLDING)
             || harvest.name === "QI" //added QI manually because the benqi rewarder contract have a bad view of pending rewards
 
         if (harvest.harvestOverride && !cost.lt(gain)) {
@@ -645,7 +653,10 @@ function addDecisions(harvests) {
         if (harvest.leverageTx && harvest.syncTx && harvest.deleverageTx) {
             //if it's not safe we want to drop some of leveraging
             if (harvest.poolState) {
-                const shouldLeverage = (harvest.poolState.dailyAPR > MIN_APR_TO_LEVERAGE && !harvest.poolState.deprecated);
+                const shouldLeverage = (harvest.poolState.dailyAPR > MIN_APR_TO_LEVERAGE 
+                    && !harvest.poolState.deprecated
+                    && harvest.poolState.tvlStaked > MIN_TVL_TO_HARVEST_FOLDING
+                    );
                 console.log(harvest.currLev, harvest.notSafe, harvest.poolState.dailyAPR, MIN_APR_TO_LEVERAGE)
                 if (harvest.currLev > 1.2 && !shouldLeverage) {
                     //we shouldn't be leveraging this pool!
@@ -931,7 +942,7 @@ function handleSettledPromises(results, originals, rejectCallback) {
         .map(result => result.value);
 }
 
-function scheduleNextHarvest() {
+async function scheduleNextHarvest() {
     executionWindowCenter += CONFIG.EXECUTION.INTERVAL;
     executionDrift = Util.randomIntFromInterval(-1 * CONFIG.EXECUTION.INTERVAL_WINDOW, CONFIG.EXECUTION.INTERVAL_WINDOW);
     const now = Date.now();
@@ -940,7 +951,8 @@ function scheduleNextHarvest() {
     console.log(`New execution window: ${new Date(executionWindowCenter - CONFIG.EXECUTION.INTERVAL_WINDOW).toLocaleTimeString()} - ${new Date(executionWindowCenter + CONFIG.EXECUTION.INTERVAL_WINDOW).toLocaleTimeString()}`);
     console.log(`Scheduled next harvest() for ${new Date(now + delay).toLocaleString()}`);
     console.log();
-    setTimeout(harvest, delay);
+    await Util.wait(delay);
+    await harvest();
 }
 
 

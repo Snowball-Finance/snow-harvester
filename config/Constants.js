@@ -23,6 +23,7 @@ const Constants = {
     MAX_GAS_PRICE: 100000000000,
     RETRY_TXS: 1,
     MIN_APR_TO_LEVERAGE: 0.011, //4% yearly
+    MIN_TVL_TO_HARVEST_FOLDING:1000,
     PROVIDERS_URL:[    
         'https://node.snowapi.net/ext/bc/C/rpc',  
         'https://api.avax.network/ext/bc/C/rpc',  

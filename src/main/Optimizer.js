@@ -1,15 +1,15 @@
 const { ethers } = require("ethers");
-const { TIMELOCK_ADDRESS } = require("../../config/Constants");
 const { OPTIMIZER_CONTROLLER, OPTIMIZER_POOLS } = require("../../config/Wants");
 const Utils = require('./Util.js');
 const ABI = require('../../config/abi.json');
 const CONFIG = require('../../config/Config');
+const Constants = require("../../config/Constants");
 
 //TO-DO add totalTVL 
 async function doOptimize(signer) {
     const optimizerController = new ethers.Contract(OPTIMIZER_CONTROLLER, ABI.CONTROLLER, signer);
 
-    let timelockTargets = [], timelockValues = [], timelockData = [];
+    let timelockOperations = [];
 
     let discordDescription = "";
     for (const pool of OPTIMIZER_POOLS) {
@@ -74,67 +74,43 @@ async function doOptimize(signer) {
             const IController = new ethers.utils.Interface(ABI.CONTROLLER);
             const encodedSetStrategy = IController.encodeFunctionData("setStrategy", [pool.LP, infoList[bestIndex].strategy]);
 
+            let timelockTargets = [], timelockData = []
+
             timelockData.push(encodedHarvest);
             timelockTargets.push(currentStrategy);
-            timelockValues.push(0);
             
             timelockData.push(encodedSetStrategy);
             timelockTargets.push(OPTIMIZER_CONTROLLER);
-            timelockValues.push(0);
 
             timelockData.push(encodedEarn);
             timelockTargets.push(infoList[bestIndex].snowglobe);
-            timelockValues.push(0);
 
-            if(bestAPY > 4){
+            if(bestAPY / 365 > Constants.MIN_APR_TO_LEVERAGE){
                 timelockData.push(encodedLeverage);
                 timelockTargets.push(infoList[bestIndex].strategy);
-                timelockValues.push(0);
             }
+            timelockOperations.push({
+                "targets": timelockTargets,
+                "data": timelockData
+            })
         }
-        console.log(timelockTargets,timelockValues,timelockData);
     }
+    console.log(timelockOperations);
 
-    if(timelockData.length > 0){
-        if(timelockData.length !== timelockTargets.length){
-            throw new Error("Invalid parameters for Optimizing pools");
-        }
-        
-        const TimelockController = new ethers.Contract(TIMELOCK_ADDRESS, ABI.TIMELOCK, signer);
-        const predecessor = "0x0000000000000000000000000000000000000000000000000000000000000000";
-        const delay = 60;
-
-        let salt = ethers.BigNumber.from("0x17d0125345ab514ed45c14f379ae363a8a1ace81d34ba2749c23ac259db51e2e");
-        salt = salt.add(Math.floor(1000000*Math.random()));
-
-        let txHash = "";
-        if(CONFIG.EXECUTION.ENABLED) {
-            const schedule = await TimelockController.scheduleBatch(
-                timelockTargets, timelockValues, timelockData, predecessor, salt, delay
-            );
-
-            const tx_schedule = await schedule.wait(1);
-            txHash = tx_schedule.transactionHash;
-        } else {
-            console.log(`Would Sent batch transaction to timelock. Set CONFIG.EXECUTION.ENABLED to enable optimizing.`);
+    if(timelockOperations.length > 0){
+        let executeData = {};
+        for(let i = 0;i < timelockOperations.length;i++){
+            const optimizerIndex = `Optimizer${i}`;
+            executeData[optimizerIndex] = timelockOperations[i];
         }
 
-        const ITimelockController = new ethers.utils.Interface(ABI.TIMELOCK);
-        const IMultisig = new ethers.utils.Interface(ABI.MULTISIG);
-
-        const inner_encoding = ITimelockController.encodeFunctionData("executeBatch", [timelockTargets, timelockValues, timelockData, predecessor, salt]);
-        const outer_encoding = IMultisig.encodeFunctionData("submitTransaction", [TIMELOCK_ADDRESS, 0, inner_encoding]);
-
-        const executeData = outer_encoding;
-
-        discordDescription += `\n\n**Run to Execute**:\n ${executeData}`;
+        discordDescription += `\n\n**Run as deploy.json to Execute**:\n ${JSON.stringify(executeData)}`;
 
         const embed = {
             "embeds": [
                 {
                     "title": "New Optimizer Batch for TimelockController",
                     "description": discordDescription,
-                    "url": Utils.cchainTransactionLink(txHash),
                     "color": 43775,
                     "timestamp": new Date(Date.now()).toISOString()
                 }
@@ -144,7 +120,7 @@ async function doOptimize(signer) {
         console.log(embed);
 
         if(CONFIG.DISCORD.ENABLED){
-            await Utils.sendDiscord(CONFIG.DISCORD.WEBHOOK_OPTIMIZER,embed);
+            await Utils.sendDiscord(CONFIG.DISCORD.WEBHOOK_OPTIMIZER, embed);
         }
     }
 }
