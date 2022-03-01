@@ -352,13 +352,16 @@ async function addRequirements(harvests) {
             if (poolInfo && poolInfo.poolId > -1) {
                 const masterchefContract = new ethers.Contract(masterchefAddress, ABI.MASTERCHEF_V3, signer);
                 const strategyInfo = await masterchefContract.pendingTokens(poolInfo.poolId, harvest.strategy.address);
-                if (strategyInfo.pendingBonusToken.gt("0x0")) {
                     const addressBonusToken = strategyInfo.bonusTokenAddress;
-                    let harvestableBonusToken = strategyInfo.pendingBonusToken;
 
+                if (strategyInfo.pendingBonusToken.gt("0x0")) {
                     const bonusTokenContract = new ethers.Contract(addressBonusToken, ABI.ERC20, signer);
+                    const balanceOfRewarder = await bonusTokenContract.balanceOf(poolInfo.poolInfo.rewarder);
+                    if(balanceOfRewarder.gt("0x0")){
+                        let harvestableBonusToken = strategyInfo.pendingBonusToken;
                     const decimalsBonusToken = await bonusTokenContract.decimals();
                     const balanceOfStrategy = await bonusTokenContract.balanceOf(harvest.strategy.address);
+
                     harvestableBonusToken = harvestableBonusToken.add(balanceOfStrategy);
                     const bonusRewardPrice = await estimatePriceOfAsset(addressBonusToken, decimalsBonusToken);
 
@@ -370,6 +373,7 @@ async function addRequirements(harvests) {
                             price: bonusRewardPrice
                         }
                     )
+                    }
                 }
             }
 
@@ -385,12 +389,13 @@ async function addRequirements(harvests) {
                         const extraMultiplier = extraMultipliers[i];
 
                         if (harvestable > 0 && extraMultiplier > 0) {
-                        //TODO add more rewards 
-
                             const addressBonusToken = addressBonusTokens[i];
                             let harvestableBonusToken = harvestable.mul(extraMultiplier).div("1"+"0".repeat(18));
 
                         const bonusTokenContract = new ethers.Contract(addressBonusToken, ABI.ERC20, signer);
+                            const balanceOfRewarder = await bonusTokenContract.balanceOf(minichefRewarders[poolIndex].rewarderAddress);
+
+                            if(balanceOfRewarder.gt("0x0")){
                             const decimalsBonusToken = await bonusTokenContract.decimals();
                         const balanceOfStrategy = await bonusTokenContract.balanceOf(harvest.strategy.address);
                         harvestableBonusToken = harvestableBonusToken.add(balanceOfStrategy);
@@ -402,6 +407,7 @@ async function addRequirements(harvests) {
                                 decimals: decimalsBonusToken,
                                 price: bonusRewardPrice
                             })
+                            }
                         }
                     }
                 }
