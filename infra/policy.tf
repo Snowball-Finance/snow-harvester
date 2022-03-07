@@ -3,7 +3,6 @@ resource "aws_iam_role" "ecs_events" {
   assume_role_policy = data.aws_iam_policy_document.ecs_events_assume_role_policy.json
 }
 
-
 data "aws_iam_policy_document" "ecs_events_assume_role_policy" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -76,25 +75,36 @@ data "aws_iam_policy_document" "task_assume_role_policy" {
 
 }
 
-data "aws_iam_policy_document" "sns_topic_policy" {
+data "aws_iam_policy_document" "task_policy" {
   statement {
-    sid = "SNSFullAccess"
-    actions = [
-      "sns:*",
-    ]
+    sid    = "AllowDecrypt"
     effect = "Allow"
+    actions = [
+      "kms:Decrypt"
+    ]
+    resources = ["${data.aws_kms_key.kms_key.arn}"]
+  }
+
+   statement {
+    sid    = "AllowAccessToSSM"
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameters"
+    ]
     resources = [
-     "*",
+      "${data.aws_ssm_parameter.dd_dog.arn}",
+      "${data.aws_ssm_parameter.discord_key.arn}",
+      "${data.aws_ssm_parameter.snowball_key.arn}"
     ]
   }
 }
 
-resource "aws_iam_policy" "sns" {
-  name = "${local.env}-${local.cluster_name}-sns-policy"
-  policy = data.aws_iam_policy_document.sns_topic_policy.json
+resource "aws_iam_policy" "policy" {
+  name = "${local.env}-${local.cluster_name}-harvester-scheduled-task-policy"
+  policy = data.aws_iam_policy_document.task_policy.json
 }
 
-resource "aws_iam_role_policy_attachment" "task_to_sns" {
+resource "aws_iam_role_policy_attachment" "task" {
   role       = aws_iam_role.task_role.name
-  policy_arn = aws_iam_policy.sns.arn
+  policy_arn = aws_iam_policy.policy.arn
 }
