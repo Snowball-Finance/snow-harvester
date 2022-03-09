@@ -92,9 +92,10 @@ data "aws_iam_policy_document" "task_policy" {
       "ssm:GetParameters"
     ]
     resources = [
-      "${data.aws_ssm_parameter.dd_dog.arn}",
-      "${data.aws_ssm_parameter.discord_key.arn}",
-      "${data.aws_ssm_parameter.snowball_key.arn}"
+      data.aws_ssm_parameter.dd_dog.arn,
+      data.aws_ssm_parameter.discord_key.arn,
+      data.aws_ssm_parameter.snowball_key.arn,
+       data.aws_ssm_parameter.snowtrace.arn
     ]
   }
 }

@@ -21,6 +21,10 @@ data "aws_ssm_parameter" "webhook" {
   name = "${local.env}-harvester-webhook"
 }
 
+data "aws_ssm_parameter" "snowtrace" { 
+  name = "${local.env}-snowtrace-key"
+}
+
 data "aws_ssm_parameter" "optimizer" { 
   name = "${local.env}-optimizer-webhook"
 }

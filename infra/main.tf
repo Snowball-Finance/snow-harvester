@@ -17,6 +17,10 @@ locals {
           name  = "DISCORD_KEY"
           valueFrom = data.aws_ssm_parameter.discord_key.arn
         },
+         { 
+           name = "SNOWTRACE_KEY"
+           valueFrom = data.aws_ssm_parameter.snowtrace.arn
+         }
       ]
       environment = [
         {
@@ -65,7 +69,7 @@ locals {
     },
     {
       name      = "log_router"
-      image     = "amazon/aws-for-fluent-bit:2.19.0"
+      image     = "public.ecr.aws/aws-observability/aws-for-fluent-bit:stable"
       essential = true
       firelensConfiguration = {
         type = "fluentbit"
