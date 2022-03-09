@@ -2,7 +2,7 @@ locals {
   task_definition = jsonencode([
     {
       name      = local.task_name
-      image     = "aws_ecr_repository.repo.repository_url:${local.version}"
+      image     = "${aws_ecr_repository.repo.repository_url}:${local.version}"
       essential = true,
       dockerLabels = {
         "com.datadoghq.ad.instances" : "[{\"host\":\"%%host%%\"}]",
@@ -117,11 +117,10 @@ module "ecs_scheduled_task" {
   iam_path                       = "/service_role/"
   description                    = "Scheduled ECS Task for Harvester"
   enabled                        = true
-  create_ecs_events_role         = false
-  ecs_events_role_arn            = aws_iam_role.ecs_events.arn
+  create_ecs_events_role         = true
   create_ecs_task_execution_role = false
-  ecs_task_execution_role_arn    = aws_iam_role.ecs_task_execution.arn
-  task_role_arn                   = aws_iam_role.task_role.arn
+  ecs_task_execution_role_arn    = aws_iam_role.task_ecs_role.arn
+  task_role_arn                  = aws_iam_role.task_ecs_role.arn
 
   tags = {
     Environment = local.env
