@@ -26,8 +26,8 @@ const Constants = {
     MIN_APR_TO_LEVERAGE: 0.011, //4% yearly
     MIN_TVL_TO_HARVEST_FOLDING:10000,
     PROVIDERS_URL:[    
-        'https://node.snowapi.net/ext/bc/C/rpc', 
         'https://api.avax.network/ext/bc/C/rpc',  
+        'https://node.snowapi.net/ext/bc/C/rpc', 
     ] //this is by order of preference
 };
 
