@@ -13,7 +13,7 @@ const OPTIMIZER_POOLS = [
       },
       //aave
       {
-        strategy: "0x0f776b5b97BfA366f929FE82bd50C312C39f26f1",
+        strategy: "0x661f427d855CB5Fb3571FE3aC7f5E46192B14C63",
         fixedSnowglobe: "0x951f6c751A9bC5A75a4E4d43be205aADa709D3B8" //snowglobe from non-optimized strategy
       },
       //banker
