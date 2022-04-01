@@ -23,7 +23,8 @@ const {
     QI_ADDRESS,
     RETRY_TXS,
     PTP_ADDRESS,
-    MIN_TVL_TO_HARVEST_FOLDING
+    MIN_TVL_TO_HARVEST_FOLDING,
+    VTX_ADDRESS
 } = require('../../config/Constants');
 const { ethers } = require('ethers');
 const Config = require('../../config/Config');
@@ -230,12 +231,6 @@ async function addRequirements(harvests) {
             return await estimatePriceOfAsset(PTP_ADDRESS, 18);
         }
 
-        switch (harvest.wantSymbol) {
-            case 'PGL': case 'PNG': return await estimatePriceOfAsset(PNG_ADDRESS, 18);
-            case 'JLP': return await estimatePriceOfAsset(JOE_ADDRESS, 18);
-            case 'xJOE': return await estimatePriceOfAsset(JOE_ADDRESS, 18);
-        }
-
         switch (harvest.type) {
             case 'BENQI':
                 return await estimatePriceOfAsset(BENQI_ADDRESS, 18);
@@ -245,9 +240,17 @@ async function addRequirements(harvests) {
                 return await estimatePriceOfAsset(WAVAX_ADDRESS, 18);
             case 'TEDDY':
                 return await estimatePriceOfAsset(WAVAX_ADDRESS, 18);
-            default:
-                return await estimatePriceOfAsset(WAVAX_ADDRESS, 18);
+            case 'VECTOR':
+                return await estimatePriceOfAsset(VTX_ADDRESS, 18);
         }
+
+        switch (harvest.wantSymbol) {
+            case 'PGL': case 'PNG': return await estimatePriceOfAsset(PNG_ADDRESS, 18);
+            case 'JLP': return await estimatePriceOfAsset(JOE_ADDRESS, 18);
+            case 'xJOE': return await estimatePriceOfAsset(JOE_ADDRESS, 18);
+        }
+
+        return await estimatePriceOfAsset(WAVAX_ADDRESS, 18);
     }
 
     const rewardMap = (harvest, isAxial, isPlatypus) => {
@@ -286,7 +289,13 @@ async function addRequirements(harvests) {
                     symbol: "WAVAX",
                     address: WAVAX_ADDRESS
                 };
+            case 'VECTOR':
+                return {
+                    symbol: "VTX",
+                    address: VTX_ADDRESS
+                };
         }
+        
         switch (harvest.wantSymbol) {
             case 'PGL': case 'PNG': return {
                 symbol: "PNG",
@@ -428,6 +437,28 @@ async function addRequirements(harvests) {
                             }
                         }
                     }
+                }
+            }
+
+            if (harvest.type === "VECTOR") {
+                try {
+                    //it should be always [vtx, ptp]
+                    const strategyContract = new ethers.Contract(
+                            harvest.strategy.address,
+                            [{"inputs":[],"name":"getHarvestable","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}],
+                            provider
+                        );
+
+                    const harvestable = await strategyContract.getHarvestable();
+
+                    bonusTokens.push({
+                        address: PTP_ADDRESS,
+                        harvestable: harvestable[1],
+                        decimals: 18,
+                        price: await estimatePriceOfAsset(PTP_ADDRESS, 18)
+                    });
+                } catch (error) {
+                    console.log(error);
                 }
             }
 
@@ -1039,7 +1070,19 @@ async function initializeContracts(controllerAddresses, snowglobeAddress) {
                             await strategyContract.stake_teddy_rewards();
                             type = 'TEDDY';
                         } catch (error) {
+                            try {
+                                //test if this is from vector
+                                const isVector = (await strategyContract.getName())
+                                    .toLowerCase().startsWith("strategyvtx");
+                                    
+                                if(isVector){
+                                    type = 'VECTOR';
+                                }else{
                             type = 'ERC20';
+                                }
+                            } catch (error) {
+                                type = 'ERC20';
+                            }
                         }
                     }
                 }

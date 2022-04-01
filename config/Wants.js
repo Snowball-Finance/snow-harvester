@@ -160,6 +160,7 @@ const Wants = {
 
   CONTROLLERS: [
     OPTIMIZER_CONTROLLER,
+    '0x5a068C00E32D18A354755Cddb01aC65ca074Aa06', // vector controller
     '0x14559fb4d15Cf8DCbc35b7EDd1215d56c0468202', // Platypus controller
     '0xCEB829a0881350689dAe8CBD77D0E012cf7a6a3f', // New trader joe controller
     '0x252B5fD3B1Cb07A2109bF36D5bDE6a247c6f4B59', // BENQI second Controller
