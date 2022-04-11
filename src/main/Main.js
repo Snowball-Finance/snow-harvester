@@ -117,14 +117,14 @@ async function initHarvests(retrys = 0) {
 
     const gasPrice = await provider.getGasPrice();
     //we shouldnt harvest if the gas price is too high
-    if (gasPrice > MAX_GAS_PRICE) {
+    /*if (gasPrice > MAX_GAS_PRICE) {
         if (retrys > 35) { //try 6 hours
             throw new Error("Tried too many times, aborting.");
         }
         console.log("Gas too high, awaiting 10min before trying again.");
         await Util.wait(600000); //wait 10 minutes
         return initHarvests(retrys += 1);
-    }
+    }*/
 
     const getBlocks24h = async (currentBlockNumber) => {
         let currentBlock, yesterdayBlock;
@@ -445,7 +445,7 @@ async function addRequirements(harvests) {
                     //it should be always [vtx, ptp]
                     const strategyContract = new ethers.Contract(
                             harvest.strategy.address,
-                            [{"inputs":[],"name":"getHarvestable","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}],
+                        [{ "inputs": [], "name": "getHarvestable", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }, { "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }],
                             provider
                         );
 
@@ -492,11 +492,18 @@ async function addRequirements(harvests) {
             bonusTokens
         }
     };
-    return await Promise.all(harvests.map(addHarvestFees))
-        .catch(err => {
+    const txs = [];
+    for (const harvest of harvests) {
+        try {
+            txs.push(await addHarvestFees(harvest));
+        } catch (error) {
+            txs.push();
             console.error(`Error fetching requirements from strategy`);
-            throw err;
-        });
+            console.error(error);
+        }
+    }
+
+    return txs;
 }
 
 function addCalculations(harvests) {
@@ -546,12 +553,19 @@ async function addEarnTx(harvests) {
             earnGas: ethers.BigNumber.from(earnGas),//await earnTx.estimateGas({from: CONFIG.WALLET.ADDRESS}),
         };
     };
-    const handleRejection = (harvest, err) => {
-        console.error(`Skipping ${harvest.name} due to earn() error (snowglobe: ${harvest.snowglobe.address})`);
-        console.error(err);
-    };
-    return Promise.allSettled(harvests.map(addTx))
-        .then(results => handleSettledPromises(results, harvests, handleRejection));
+
+    const txs = [];
+    for (const harvest of harvests) {
+        try {
+            txs.push(await addTx(harvest));
+        } catch (error) {
+            txs.push();
+            console.error(`Skipping ${harvest.name} due to earn() error (snowglobe: ${harvest.snowglobe.address})`);
+            console.error(error);
+        }
+    }
+
+    return txs;
 }
 
 async function addHarvestTx(harvests) {
@@ -561,9 +575,8 @@ async function addHarvestTx(harvests) {
         const estGas = await strategyUnsigned.estimateGas.harvest({ from: CONFIG.WALLET.ADDRESS });
         const harvestGas = estGas > MAX_GAS_LIMIT_HARV ? estGas : MAX_GAS_LIMIT_HARV;
         //avoid rate limiting by snowtrace
-        await Util.wait(Math.floor((300000*Math.random())));
+        await Util.wait(Math.floor((300000 * Math.random())));
         const harvestedLast24h = await ran24h(harvest.strategy.address, "0x4641257d");
-        console.log(harvestedLast24h, harvest.strategy.address);
         return {
             ...harvest,
             harvestTx,
@@ -571,12 +584,19 @@ async function addHarvestTx(harvests) {
             harvestGas: ethers.BigNumber.from(harvestGas),//await harvestTx.estimateGas({from: CONFIG.WALLET.ADDRESS}),
         };
     };
-    const handleRejection = (harvest, err) => {
-        console.error(`Skipping ${harvest.name} due to harvest() error (strategy: ${Util.cchainAddressLink(harvest.strategy.address)})`);
-        console.error(err);
-    };
-    return Promise.allSettled(harvests.map(addTx))
-        .then(results => handleSettledPromises(results, harvests, handleRejection));
+
+    const txs = [];
+    for (const harvest of harvests) {
+        try {
+            txs.push(await addTx(harvest));
+        } catch (error) {
+            txs.push();
+            console.error(`Skipping ${harvest.name} due to harvest() error (strategy: ${harvest.strategy.address})`);
+            console.error(error);
+        }
+    }
+
+    return txs;
 }
 
 async function addLeverageTx(harvests) {
@@ -606,12 +626,18 @@ async function addLeverageTx(harvests) {
         }
     }
 
-    const handleRejection = (harvest, err) => {
+    const txs = [];
+    for (const harvest of harvests) {
+        try {
+            txs.push(await addTx(harvest));
+        } catch (error) {
+            txs.push();
         console.error(`Skipping ${harvest.name} due to leverageToMax() error (strategy: ${Util.cchainAddressLink(harvest.strategy.address)})`);
-        console.error(err);
-    };
-    return Promise.allSettled(harvests.map(addTx))
-        .then(results => handleSettledPromises(results, harvests, handleRejection));
+            console.error(error);
+        }
+    }
+
+    return txs;
 }
 
 async function addDeleverageTx(harvests) {
@@ -675,12 +701,18 @@ async function addDeleverageTx(harvests) {
         }
     }
 
-    const handleRejection = (harvest, err) => {
+    const txs = [];
+    for (const harvest of harvests) {
+        try {
+            txs.push(await addTx(harvest));
+        } catch (error) {
+            txs.push();
         console.error(`Skipping ${harvest.name} due to sync() error (strategy: ${Util.cchainAddressLink(harvest.strategy.address)})`);
-        console.error(err);
-    };
-    return Promise.allSettled(harvests.map(addTx))
-        .then(results => handleSettledPromises(results, harvests, handleRejection));
+            console.error(error);
+        }
+    }
+
+    return txs;
 }
 
 function addDecisions(harvests) {
@@ -1075,9 +1107,9 @@ async function initializeContracts(controllerAddresses, snowglobeAddress) {
                                 const isVector = (await strategyContract.getName())
                                     .toLowerCase().startsWith("strategyvtx");
                                     
-                                if(isVector){
+                                if (isVector) {
                                     type = 'VECTOR';
-                                }else{
+                                } else {
                             type = 'ERC20';
                                 }
                             } catch (error) {
