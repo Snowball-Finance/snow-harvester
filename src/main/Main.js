@@ -117,14 +117,14 @@ async function initHarvests(retrys = 0) {
 
     const gasPrice = await provider.getGasPrice();
     //we shouldnt harvest if the gas price is too high
-    /*if (gasPrice > MAX_GAS_PRICE) {
+    if (gasPrice > MAX_GAS_PRICE) {
         if (retrys > 35) { //try 6 hours
             throw new Error("Tried too many times, aborting.");
         }
         console.log("Gas too high, awaiting 10min before trying again.");
         await Util.wait(600000); //wait 10 minutes
         return initHarvests(retrys += 1);
-    }*/
+    }
 
     const getBlocks24h = async (currentBlockNumber) => {
         let currentBlock, yesterdayBlock;
