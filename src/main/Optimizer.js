@@ -27,19 +27,30 @@ async function doOptimize(signer) {
 
             const poolInfo = await Utils.getPoolAPIInfo(contract.fixedSnowglobe);
             if (!poolInfo) {
-                throw new Error("Pool not found in API");
+                console.log(`Pool not found in API: ${contract.fixedSnowglobe}`);
+                infoList.push(
+                    {
+                        name: "",
+                        source: "",
+                        APY: 0,
+                        TVL: 0,
+                        strategy: contract.strategy,
+                        snowglobe: pool.snowglobe,
+                    }
+                )
+            } else {
+                infoList.push(
+                    {
+                        name: poolInfo.name,
+                        source: poolInfo.source,
+                        APY: poolInfo.yearlyAPY,
+                        TVL: poolInfo.tvlStaked,
+                        strategy: contract.strategy,
+                        snowglobe: pool.snowglobe,
+                    }
+                )
             }
 
-            infoList.push(
-                {
-                    name: poolInfo.name,
-                    source: poolInfo.source,
-                    APY: poolInfo.yearlyAPY,
-                    TVL: poolInfo.tvlStaked,
-                    strategy: contract.strategy,
-                    snowglobe: pool.snowglobe,
-                }
-            )
         }
 
         //search for the best APY with a .3% buffer

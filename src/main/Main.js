@@ -80,6 +80,7 @@ async function harvest() {
         .then(addLeverageTx)
         .then(addDeleverageTx)
         .then(addDecisions)
+        .then(retryGas)
         .then(doHarvesting)
         .then(doEarning)
         .then(doLeveraging)
@@ -97,10 +98,24 @@ async function harvest() {
         .catch(handleError);
 }
 
+const retryGas = async (harvests, retrys = 0) => {
+    const gasPrice = await provider.getGasPrice();
+    //we shouldnt harvest if the gas price is too high
+    if (gasPrice > MAX_GAS_PRICE) {
+        if (retrys > 35) { //try 6 hours
+            throw new Error("Tried too many times, aborting.");
+        }
+        console.log("Gas too high, awaiting 10min before trying again.");
+        await Util.wait(600000); //wait 10 minutes
+        return await retryGas(harvests, retrys += 1);
+    }
+    return harvests;
+}
+
 async function getSnowglobes() {
     const gauge_proxy = new ethers.Contract(WANTS.GAUGE_PROXY_ADDRESS, ABI.GAUGE_PROXY, signer);
 
-    const pools = await gauge_proxy.tokens();
+    const pools = (await gauge_proxy.tokens());
 
     return [
         // remove omitted overrides
@@ -111,20 +126,10 @@ async function getSnowglobes() {
     ];
 }
 
-async function initHarvests(retrys = 0) {
+async function initHarvests() {
     provider = await selectBestProvider();
     signer = new ethers.Wallet(CONFIG.WALLET.KEY, provider);
-
     const gasPrice = await provider.getGasPrice();
-    //we shouldnt harvest if the gas price is too high
-    if (gasPrice > MAX_GAS_PRICE) {
-        if (retrys > 35) { //try 6 hours
-            throw new Error("Tried too many times, aborting.");
-        }
-        console.log("Gas too high, awaiting 10min before trying again.");
-        await Util.wait(600000); //wait 10 minutes
-        return initHarvests(retrys += 1);
-    }
 
     const getBlocks24h = async (currentBlockNumber) => {
         let currentBlock, yesterdayBlock;
@@ -218,6 +223,7 @@ async function initHarvests(retrys = 0) {
             console.log(error.message);
         }
     };
+
     return results;
 }
 
@@ -575,7 +581,7 @@ async function addHarvestTx(harvests) {
         const estGas = await strategyUnsigned.estimateGas.harvest({ from: CONFIG.WALLET.ADDRESS });
         const harvestGas = estGas > MAX_GAS_LIMIT_HARV ? estGas : MAX_GAS_LIMIT_HARV;
         //avoid rate limiting by snowtrace
-        await Util.wait(Math.floor((300000 * Math.random())));
+        await Util.wait(1000);
         const harvestedLast24h = await ran24h(harvest.strategy.address, "0x4641257d");
         return {
             ...harvest,
@@ -1110,7 +1116,7 @@ async function initializeContracts(controllerAddresses, snowglobeAddress) {
                                 if (isVector) {
                                     type = 'VECTOR';
                                 } else {
-                            type = 'ERC20';
+                                    type = 'ERC20';
                                 }
                             } catch (error) {
                                 type = 'ERC20';
